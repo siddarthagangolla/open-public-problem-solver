@@ -2,22 +2,6 @@ services:
   - type: web
     name: opps-backend
     env: python
+    rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: SUPABASE_URL
-        value: https://jcnxhlyetjxlbrxzjurr.supabase.co
-      - key: SUPABASE_KEY
-        value: sb_publishable_rV04JvfC_N8ipLIL22V_Xw_r2DEUkBH
-      - key: SUPABASE_SECRET_KEY
-        value: sb_secret_RgjStztQu97auTdzErA8Lg_l4L2h2I1
-      - key: SECRET_KEY
-        value: opps_super_secret_jwt_key_2025_siddhartha
-      - key: ALGORITHM
-        value: HS256
-      - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: 1440
-      - key: ADMIN_EMAIL
-        value: admin@opps.com
-      - key: ADMIN_PASSWORD
-        value: Admin@2025#
