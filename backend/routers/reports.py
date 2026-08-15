@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from database import get_db
-from models import CategoryEnum
 from datetime import datetime
 import uuid
 import os
@@ -18,6 +17,32 @@ def get_all_reports():
         db = get_db()
         response = db.table("reports")\
             .select("*")\
+            .order("created_at", desc=True)\
+            .execute()
+        return {"success": True, "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/status/{status}")
+def get_reports_by_status(status: str):
+    try:
+        db = get_db()
+        response = db.table("reports")\
+            .select("*")\
+            .eq("status", status)\
+            .order("created_at", desc=True)\
+            .execute()
+        return {"success": True, "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/category/{category}")
+def get_reports_by_category(category: str):
+    try:
+        db = get_db()
+        response = db.table("reports")\
+            .select("*")\
+            .eq("category", category)\
             .order("created_at", desc=True)\
             .execute()
         return {"success": True, "data": response.data}
@@ -56,20 +81,22 @@ async def create_report(
         ticket_id = generate_ticket_id()
         photo_url = None
 
-        # Upload photo if provided
         if photo and photo.filename:
-            photo_bytes = await photo.read()
-            file_ext = photo.filename.split(".")[-1]
-            file_name = f"{ticket_id}.{file_ext}"
-            db.storage.from_("report-photos").upload(
-                file_name,
-                photo_bytes,
-                {"content-type": photo.content_type}
-            )
-            supabase_url = os.getenv("SUPABASE_URL")
-            photo_url = f"{supabase_url}/storage/v1/object/public/report-photos/{file_name}"
+            try:
+                photo_bytes = await photo.read()
+                file_ext = photo.filename.split(".")[-1]
+                file_name = f"{ticket_id}.{file_ext}"
+                db.storage.from_("report-photos").upload(
+                    file_name,
+                    photo_bytes,
+                    {"content-type": photo.content_type}
+                )
+                supabase_url = os.getenv("SUPABASE_URL")
+                photo_url = f"{supabase_url}/storage/v1/object/public/report-photos/{file_name}"
+            except Exception as photo_error:
+                print(f"Photo upload failed: {photo_error}")
+                photo_url = None
 
-        # Insert report
         report_data = {
             "ticket_id": ticket_id,
             "title": title,
@@ -94,31 +121,5 @@ async def create_report(
             "ticket_id": ticket_id,
             "data": response.data[0]
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/category/{category}")
-def get_reports_by_category(category: str):
-    try:
-        db = get_db()
-        response = db.table("reports")\
-            .select("*")\
-            .eq("category", category)\
-            .order("created_at", desc=True)\
-            .execute()
-        return {"success": True, "data": response.data}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/status/{status}")
-def get_reports_by_status(status: str):
-    try:
-        db = get_db()
-        response = db.table("reports")\
-            .select("*")\
-            .eq("status", status)\
-            .order("created_at", desc=True)\
-            .execute()
-        return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
